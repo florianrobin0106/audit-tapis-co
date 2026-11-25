@@ -1,0 +1,22 @@
+name: Expiration de l'audit
+on:
+  schedule:
+    - cron: "59 22 28 11 *"   # 28/11 22:59 UTC = 28/11 23:59 heure de Paris
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  expirer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remplacer le site et effacer l'historique
+        run: |
+          git checkout --orphan expire
+          git rm -rf --cached . >/dev/null
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          printf '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Lien expiré</title></head><body style="font-family:system-ui;display:grid;place-items:center;min-height:100vh;margin:0;text-align:center"><div><h1>Lien expiré</h1><p>Cet audit n&#39;est plus disponible.</p></div></body></html>' > index.html
+          touch .nojekyll
+          git add index.html .nojekyll
+          git -c user.name=expiration -c user.email=expiration@users.noreply.github.com commit -m "Lien expiré"
+          git push --force origin expire:main
